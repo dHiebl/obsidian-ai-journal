@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.journal.watcher</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/path/to/your/vault/_system/ai/.venv/bin/python3</string>
+        <string>/path/to/your/vault/_system/ai/watch_vault.py</string>
+    </array>
+    
+    <key>WorkingDirectory</key>
+    <string>/path/to/your/vault/_system/ai</string>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <true/>
+    
+    <key>StandardOutPath</key>
+    <string>/path/to/your/vault/_System/watcher.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/path/to/your/vault/_System/watcher_error.log</string>
+    
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
+

@@ -1,0 +1,7 @@
+watchdog>=4.0.0
+llama-index-core>=0.10.0
+llama-index-llms-ollama>=0.1.0
+llama-index-embeddings-ollama>=0.1.0
+llama-index-retrievers-bm25>=0.1.0
+PyYAML>=6.0
+

@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Documentation examples
+/docs/
+
+# Runtime files
+*.log
+watcher.log
+
+# Test files
+test_*.md
+
+# Personal configuration (contains user-specific paths)
+com.journal.watcher.plist
