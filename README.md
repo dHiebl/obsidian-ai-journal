@@ -86,12 +86,12 @@ Press `Ctrl+C` to stop the watcher gracefully.
 
 To use this system, your daily journal entries need to signal when they're ready for analysis. Add one of these markers to your template:
 
-### Option 1: YAML Frontmatter
+### Option 1: YAML Frontmatter (see daily.md)
 
 ```markdown
 ---
 date: 2025-11-04
-ai_ready: true
+ai_ready: false
 ---
 
 ## Entry
@@ -119,7 +119,7 @@ Edit `config.py` to customize:
 
 - **Models**: Change `LLM_MODEL` or `EMBED_MODEL` to use different Ollama models
 - **Paths**: Adjust vault and folder paths if your structure is different
-- **Triggers**: Modify `IDLE_SECONDS` (default: 90) or `MIN_LENGTH` (default: 250 characters)
+- **Triggers**: Modify `IDLE_SECONDS` (default: 30) or `MIN_LENGTH` (default: 150 characters)
 - **Retrieval**: Change `TOP_K` (default: 5) to retrieve more or fewer past entries
 
 ## Output Format
@@ -168,8 +168,8 @@ The AI analysis is appended to your journal entry with this structure:
 
 Common issues:
 - **No ready marker**: Add `ai_ready: true` to frontmatter or `<!-- AI:READY -->` to the body
-- **Entry too short**: Must be at least 250 characters (configurable in `config.py`)
-- **Not idle long enough**: Wait 90 seconds after your last edit
+- **Entry too short**: Must be at least 150 characters (configurable in `config.py`)
+- **Not idle long enough**: Wait 30 seconds after your last edit
 - **AI analysis already exists**: The system won't process the same entry twice
 
 ### Ollama Connection Errors
