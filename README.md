@@ -9,6 +9,7 @@ An intelligent watcher that monitors your Obsidian daily journal entries and aut
 - **Incremental Indexing**: Efficiently updates the vector store without rebuilding from scratch
 - **Smart Triggers**: Only processes entries that are explicitly marked ready and have been idle for 90 seconds
 - **Structured Insights**: Generates consistent analysis with specific sections: Summary, Emotions, Distortions, Triggers/Needs, Patterns, and Reflection Prompts
+- **Obsidian Integration**: Automatically creates `[[YYYY-MM-DD]]` links to past journal entries, making patterns clickable and interconnected
 
 ## Prerequisites
 
@@ -157,8 +158,17 @@ The AI analysis is appended to your journal entry with this structure:
 3. **Debouncing**: Waits 90 seconds after the last edit to ensure you're done writing
 4. **Context Retrieval**: Searches the vector index for 5 similar past entries using hybrid BM25 + vector search
 5. **AI Generation**: Sends your entry + past context to the LLM for analysis
-6. **Appending**: Atomically writes the analysis to the end of your file
+6. **Appending**: Atomically writes the analysis to the end of your file, including clickable `[[YYYY-MM-DD]]` links to referenced past entries
 7. **Index Update**: Updates the vector store incrementally (no full rebuild)
+
+## Obsidian Integration
+
+The AI analysis includes **clickable links** to past journal entries. When the system identifies patterns or connections to previous entries, it references them using Obsidian's `[[YYYY-MM-DD]]` format. 
+
+For example, in the **Patterns** section, you might see:
+> "Similar feelings of frustration appeared in [[2025-10-28]] when you also missed the gym due to illness."
+
+Click these links to jump directly to the referenced entries and explore the patterns yourself.
 
 ## Troubleshooting
 
