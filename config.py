@@ -58,7 +58,7 @@ A concise 2-3 sentence summary of the main themes and events.
 Identify the primary and secondary emotions expressed, with specific evidence from the text.
 
 ## Distortions
-Identify any cognitive distortions (e.g., all-or-nothing thinking, catastrophizing, should statements) with gentle, non-judgmental explanations.
+Identify any cognitive distortions with gentle, non-judgmental explanations.
 
 ## Triggers/Needs
 Identify what triggered these feelings and what underlying needs might be unmet (e.g., autonomy, connection, competence).
