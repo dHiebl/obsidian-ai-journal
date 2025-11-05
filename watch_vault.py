@@ -33,6 +33,9 @@ from llama_index.embeddings.ollama import OllamaEmbedding
 
 from config import (
     VAULT_PATH,
+    DAILY_DIR,
+    PERSIST_DIR,
+    LOG_PATH,
     DAILY_NOTES_PATH,
     INDEX_PERSIST_PATH,
     LOG_FILE_PATH,
@@ -555,9 +558,9 @@ def main():
     
     # Update paths based on vault argument
     vault_path = args.vault
-    daily_notes_path = vault_path / "Journal/Daily"
-    index_persist_path = vault_path / "_System/index"
-    log_file_path = vault_path / "_System/watcher.log"
+    daily_notes_path = vault_path / DAILY_DIR
+    index_persist_path = vault_path / PERSIST_DIR
+    log_file_path = vault_path / LOG_PATH
     
     # Setup logging
     setup_logging(log_file_path)

@@ -9,7 +9,3 @@ ai_ready: false
 ## Entry
 
 
----
-## AI Analysis
-
-

@@ -7,12 +7,12 @@
     
     <key>ProgramArguments</key>
     <array>
-        <string>/path/to/your/vault/_system/ai/.venv/bin/python3</string>
-        <string>/path/to/your/vault/_system/ai/watch_vault.py</string>
+        <string>/path/to/your/vault/_System/ai/.venv/bin/python3</string>
+        <string>/path/to/your/vault/_System/ai/watch_vault.py</string>
     </array>
     
     <key>WorkingDirectory</key>
-    <string>/path/to/your/vault/_system/ai</string>
+    <string>/path/to/your/vault/_System/ai</string>
     
     <key>RunAtLoad</key>
     <true/>

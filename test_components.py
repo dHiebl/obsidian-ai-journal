@@ -136,7 +136,7 @@ This is my entry.
 
 ---
 
-## AI Analysis (2025-11-04 14:30)
+## AI Analysis
 This is AI analysis."""
         
         user_text = split_user_text(test_content)

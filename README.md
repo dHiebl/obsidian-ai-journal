@@ -1,15 +1,31 @@
-# AI Journal Analysis System
+# Fully Local Journal AI Analysis
 
 An intelligent watcher that monitors your Obsidian daily journal entries and automatically appends AI-generated insights using RAG (Retrieval-Augmented Generation) with your past entries.
+
+## ⚠️ Folder Structure
+
+This system expects a specific folder structure by default:
+
+```
+~/Documents/Obsidian/Personal/          # Your vault
+├── Journal/Daily/                      # Daily journal entries
+└── _System/                            # System files (index, logs)
+    └── ai/                             # This codebase
+```
+
+**Using a different structure?** Edit `config.py` to customize:
+- `DAILY_DIR` - Where your daily journal entries are (default: `"Journal/Daily"`)
+- `PERSIST_DIR` - Where to store the vector index (default: `"_System/index"`)
+- `LOG_PATH` - Where to write logs (default: `"_System/watcher.log"`)
 
 ## Features
 
 - **Automatic Analysis**: Watches your daily journal folder and analyzes entries when you mark them ready
 - **Context-Aware**: Uses hybrid retrieval (BM25 + vector search) to find relevant past entries for context
-- **Incremental Indexing**: Efficiently updates the vector store without rebuilding from scratch
-- **Smart Triggers**: Only processes entries that are explicitly marked ready and have been idle for 90 seconds
-- **Structured Insights**: Generates consistent analysis with specific sections: Summary, Emotions, Distortions, Triggers/Needs, Patterns, and Reflection Prompts
-- **Obsidian Integration**: Automatically creates `[[YYYY-MM-DD]]` links to past journal entries, making patterns clickable and interconnected
+- **Smart Triggers**: Only processes entries that are marked ready, meet minimum length (150 chars), and have been idle for 30 seconds
+- **Structured Insights**: Generates analysis with sections for Summary, Emotions, Distortions, Triggers/Needs, Patterns, and Reflection Prompts
+- **Obsidian Links**: Creates clickable `[[YYYY-MM-DD]]` links to past journal entries when identifying patterns
+- **Fully Local**: All processing happens on your machine using Ollama - your data never leaves your computer
 
 ## Prerequisites
 
@@ -52,47 +68,35 @@ ollama pull gpt-oss:20b
 ollama pull embeddinggemma:300m
 ```
 
-**Note**: The `gpt-oss:20b` model is quite large (~12GB). If you prefer a smaller model, you can edit `config.py` and change `LLM_MODEL` to something like `qwen2.5:7b` or `gemma2:9b`.
+**Note**: The `gpt-oss:20b` model is quite large (~12GB). If you prefer a smaller model, you can edit `config.py` and change `LLM_MODEL` to something like `qwen3:8b` or `gemma2:9b`.
 
 ## Usage
 
-### Basic Usage
-
-Simply run the watcher from your vault's `_System/ai` directory:
+Run the watcher from the directory where you installed the code:
 
 ```bash
+cd /path/to/your/vault/_System/ai
 python watch_vault.py
 ```
 
-The watcher will:
-1. Monitor your `Journal/Daily/` folder for changes
-2. Wait for entries to be marked as ready
-3. Wait 30 seconds after the last edit
-4. Generate AI analysis and append it to the file
-5. Update the vector index with the new entry
-
-### Custom Vault Path
-
-If your vault is not at the default location (`~/Obsidian/Personal`), specify it:
+Or specify a custom vault path:
 
 ```bash
 python watch_vault.py --vault /path/to/your/vault
 ```
 
-### Stopping the Watcher
+Stop with `Ctrl+C`.
 
-Press `Ctrl+C` to stop the watcher gracefully.
+## Journal Template
 
-## Obsidian Template
+Your daily journal entries need to signal when they're ready for analysis. See `daily.md` for a template example.
 
-To use this system, your daily journal entries need to signal when they're ready for analysis. Add one of these markers to your template:
-
-### Option 1: YAML Frontmatter (see daily.md)
+Add `ai_ready: true` to your frontmatter when ready:
 
 ```markdown
 ---
 date: 2025-11-04
-ai_ready: false
+ai_ready: true
 ---
 
 ## Entry
@@ -100,205 +104,60 @@ ai_ready: false
 Your journal content here...
 ```
 
-### Option 2: HTML Comment
-
-```markdown
----
-date: 2025-11-04
----
-
-## Entry
-
-Your journal content here...
-
-<!-- AI:READY -->
-```
+Or use an HTML comment: `<!-- AI:READY -->`
 
 ## Configuration
 
 Edit `config.py` to customize:
 
-- **Models**: Change `LLM_MODEL` or `EMBED_MODEL` to use different Ollama models
-- **Paths**: Adjust vault and folder paths if your structure is different
-- **Triggers**: Modify `IDLE_SECONDS` (default: 30) or `MIN_LENGTH` (default: 150 characters)
-- **Retrieval**: Change `TOP_K` (default: 5) to retrieve more or fewer past entries
-
-## Output Format
-
-The AI analysis is appended to your journal entry with this structure:
-
-```markdown
----
-
-## AI Analysis
-
-## Summary
-[Concise summary of the entry]
-
-## Emotions
-[Identified emotions with evidence]
-
-## Distortions
-[Any cognitive distortions identified]
-
-## Triggers/Needs
-[What triggered these feelings and underlying needs]
-
-## Patterns
-[Connections to patterns from past entries]
-
-## 3 Prompts
-[Three reflection questions]
-```
-
-## How It Works
-
-1. **File Watching**: Uses `watchdog` to monitor file modifications in `Journal/Daily/`
-2. **Ready Check**: Verifies the entry has a ready marker, meets minimum length, and doesn't already have AI analysis
-3. **Debouncing**: Waits 90 seconds after the last edit to ensure you're done writing
-4. **Context Retrieval**: Searches the vector index for 5 similar past entries using hybrid BM25 + vector search
-5. **AI Generation**: Sends your entry + past context to the LLM for analysis
-6. **Appending**: Atomically writes the analysis to the end of your file, including clickable `[[YYYY-MM-DD]]` links to referenced past entries
-7. **Index Update**: Updates the vector store incrementally (no full rebuild)
-
-## Obsidian Integration
-
-The AI analysis includes **clickable links** to past journal entries. When the system identifies patterns or connections to previous entries, it references them using Obsidian's `[[YYYY-MM-DD]]` format. 
-
-For example, in the **Patterns** section, you might see:
-> "Similar feelings of frustration appeared in [[2025-10-28]] when you also missed the gym due to illness."
-
-Click these links to jump directly to the referenced entries and explore the patterns yourself.
+- **Models**: `LLM_MODEL` (default: `gpt-oss:20b`) or `EMBED_MODEL` (default: `embeddinggemma:300m`)
+- **Triggers**: `IDLE_SECONDS` (default: 30), `MIN_LENGTH` (default: 150 characters)
+- **Retrieval**: `TOP_K` (default: 5) - number of past entries to use as context
+- **Prompt**: `ANALYSIS_SYSTEM_PROMPT` - customize the AI's analysis style
 
 ## Troubleshooting
 
-### Watcher Not Processing Entry
+**Check logs first**: `_System/watcher.log` contains detailed information about processing.
 
-**Check the log file** at `_System/watcher.log` for detailed information.
+### Common Issues
 
-Common issues:
-- **No ready marker**: Add `ai_ready: true` to frontmatter or `<!-- AI:READY -->` to the body
-- **Entry too short**: Must be at least 150 characters (configurable in `config.py`)
-- **Not idle long enough**: Wait 30 seconds after your last edit
-- **AI analysis already exists**: The system won't process the same entry twice
+**Entry not processing:**
+- Add `ai_ready: true` to frontmatter
+- Entry must be at least 150 characters
+- Wait 30 seconds after your last edit
+- Each entry is only processed once per session
 
-### Ollama Connection Errors
-
-```
-Error: Could not connect to Ollama
-```
-
-**Solutions**:
+**Ollama connection errors:**
 - Ensure Ollama is running: `ollama serve`
 - Verify models are downloaded: `ollama list`
-- Check if Ollama is listening on `http://localhost:11434`
-- If using a different port, update `OLLAMA_URL` in `config.py`
+- Check `http://localhost:11434` is accessible
 
-### Models Not Found
-
-```
-Error: model 'gpt-oss:20b' not found
-```
-
-**Solution**: Pull the required models:
+**Models not found:**
 ```bash
 ollama pull gpt-oss:20b
 ollama pull embeddinggemma:300m
 ```
 
-### Permission Errors
-
-If you get permission errors when writing to the vault:
-- Ensure the watcher has write permissions to your vault folder
-- Check that your vault isn't in a cloud-synced folder that's currently syncing
-
-### Index Errors
-
-If the index gets corrupted:
-1. Stop the watcher
-2. Delete the `_System/index/` directory
-3. Restart the watcher (it will create a fresh index)
-
-Note: You'll lose the index, but you can rebuild it by reprocessing your entries.
-
-## File Structure
-
-```
-~/Obsidian/Personal/
-├── Journal/
-│   └── Daily/
-│       ├── 2025-11-01.md
-│       ├── 2025-11-02.md
-│       └── 2025-11-04.md
-└── _System/
-    ├── ai/
-    │   ├── watch_vault.py
-    │   ├── config.py
-    │   ├── requirements.txt
-    │   └── README.md
-    ├── index/                    # Auto-created
-    │   ├── docstore.json
-    │   ├── bm25_docstore.json
-    │   └── [vector store files]
-    └── watcher.log              # Auto-created
-```
+**Index corrupted:**
+Stop the watcher, delete `_System/index/`, restart. It will rebuild automatically.
 
 ## Tips
 
-1. **Start with a few entries**: Let the watcher process 3-5 entries first to build up context
-2. **Review and edit**: The AI analysis is meant to supplement your reflection, not replace it
-3. **Adjust the prompt**: Edit `ANALYSIS_SYSTEM_PROMPT` in `config.py` to customize the analysis style
-4. **Use different models**: Try different Ollama models to find the right balance of quality and speed
-5. **Monitor the log**: Keep an eye on `watcher.log` to understand what the system is doing
+- Start with 3-5 journal entries to build up context before relying on pattern analysis
+- The AI analysis supplements your reflection - review and edit as needed
+- Try different models in `config.py` to balance quality and speed (e.g., `qwen3:8b`, `gemma2:9b`)
+- Customize `ANALYSIS_SYSTEM_PROMPT` to match your preferred analysis style
 
-## Advanced Usage
+## Running as a Background Service
 
-### Running as a Background Service (Auto-start on Login)
+**macOS:** See `INSTALL_LAUNCHAGENT.md` for auto-start on login setup.
 
-**macOS (Recommended):**
-
-See the detailed guide in `INSTALL_LAUNCHAGENT.md` for step-by-step instructions.
-
-Quick setup:
-```bash
-# 1. Create your plist from template and customize paths
-cp com.journal.watcher.plist.template com.journal.watcher.plist
-# Edit com.journal.watcher.plist with your vault paths
-
-# 2. Install
-cp com.journal.watcher.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.journal.watcher.plist
-```
-
-The watcher will now start automatically on login and run in the background.
-
-**Linux:**
-
-Use `systemd` to create a user service.
-
-### Rebuilding the Index
-
-If you want to reindex all your entries:
-
-1. Stop the watcher
-2. Delete `_System/index/`
-3. Remove all `## AI Analysis` sections from your entries (optional)
-4. Add `ai_ready: true` to entries you want analyzed
-5. Start the watcher
-
-It will process each entry as it detects them.
+**Linux:** Use `systemd` to create a user service.
 
 ## Privacy & Data
 
-- **All processing is local**: Nothing leaves your machine
-- **No API keys required**: Uses Ollama running on your computer
-- **Your data stays private**: Vector embeddings are stored locally in `_System/index/`
+All processing is local. Nothing leaves your machine. No API keys required. Vector embeddings are stored locally in `_System/index/`.
 
 ## License
 
-This is a personal tool. Feel free to modify it for your needs.
-
-## Support
-
-Check the logs at `_System/watcher.log` for debugging information. The log includes timestamps, processing stages, and any errors encountered.
-
+MIT - Feel free to modify for your needs.
