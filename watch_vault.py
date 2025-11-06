@@ -376,7 +376,7 @@ def process_entry(
     docstore: SimpleDocumentStore,
     llm: Ollama,
     fusion_llm: Ollama
-) -> None:
+) -> bool:
     """
     Process a journal entry: retrieve context, generate analysis, append, and update index.
     
@@ -392,7 +392,8 @@ def process_entry(
         
         # 1. Check if ready
         if not is_ready(file_path):
-            return
+            logger.info(f"Entry {file_path.name} not ready yet; will retry on next modification")
+            return False
         
         # 2. Read file and extract user text
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -412,10 +413,12 @@ def process_entry(
         upsert_index(file_path, index, docstore)
         
         logger.info(f"Successfully processed entry: {file_path.name}")
+        return True
         
     except Exception as e:
         logger.error(f"Error processing entry {file_path}: {e}", exc_info=True)
         # Don't re-raise - we want the watcher to continue
+        return False
 
 
 # ============================================================================
@@ -455,6 +458,8 @@ class JournalWatcherHandler(FileSystemEventHandler):
         
         # Update timestamp
         self.file_timestamps[event.src_path] = time.time()
+        # Allow re-processing after subsequent modifications
+        self.processed_files.discard(event.src_path)
         logger.debug(f"File modified: {file_path.name}")
         
         # Schedule check after idle period
@@ -468,11 +473,12 @@ class JournalWatcherHandler(FileSystemEventHandler):
         for file_path_str, last_modified in list(self.file_timestamps.items()):
             idle_time = current_time - last_modified
             
+            if file_path_str in self.processed_files:
+                continue
+            
             if idle_time >= self.idle_seconds:
                 # File has been idle long enough
-                if file_path_str not in self.processed_files:
-                    files_to_process.append(file_path_str)
-                    self.processed_files.add(file_path_str)
+                files_to_process.append(file_path_str)
                 
                 # Remove from tracking
                 del self.file_timestamps[file_path_str]
@@ -481,7 +487,9 @@ class JournalWatcherHandler(FileSystemEventHandler):
         for file_path_str in files_to_process:
             file_path = Path(file_path_str)
             if file_path.exists():
-                process_entry(file_path, self.index, self.docstore, self.llm, self.fusion_llm)
+                processed = process_entry(file_path, self.index, self.docstore, self.llm, self.fusion_llm)
+                if processed:
+                    self.processed_files.add(file_path_str)
 
 
 # ============================================================================
