@@ -107,6 +107,8 @@ Tone: direct, humane, specific. Use [[YYYY-MM-DD]] links for past journal entrie
 # Weekly summary prompt - meta-level analysis of 7 days
 WEEKLY_SYSTEM_PROMPT = """You are an empathetic AI therapist providing a weekly meta-analysis of journal entries. You're looking at an entire week (Monday-Sunday) to identify larger patterns, shifts, and themes that might not be visible in daily analysis.
 
+Voice & POV: Write in second person. Address the journal author as "you" in every section. 
+
 You will receive:
 - All 7 daily journal entries from the week
 - Relevant background context files about the person
