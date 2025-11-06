@@ -190,33 +190,38 @@ def retrieve_context(
     index: VectorStoreIndex,
     docstore: SimpleDocumentStore,
     llm: Ollama,
-    top_k: int = TOP_K
+    min_journal_entries: int = 5
 ) -> List[str]:
     """
-    Retrieve relevant past journal entries using hybrid search.
+    Retrieve relevant past journal entries and context files using hybrid search.
+    
+    Ensures at least min_journal_entries journal entries are retrieved, with
+    additional slots filled by context files.
     
     Args:
         query_text: The current entry text to find similar entries for
         index: Vector store index
         docstore: BM25 document store
         llm: LLM instance for fusion retriever
-        top_k: Number of results to retrieve
+        min_journal_entries: Minimum number of journal entries to retrieve (default: 5)
         
     Returns:
-        List of formatted context snippets from past entries
+        List of formatted context snippets from past entries and context files
     """
     try:
-        logger.info(f"Retrieving top {top_k} similar past entries...")
+        # Retrieve more nodes than needed to ensure we can filter
+        retrieve_k = min_journal_entries + 8  # Get extra to filter from
+        logger.info(f"Retrieving up to {retrieve_k} nodes (ensuring {min_journal_entries} journal entries)...")
         
         # Vector retriever
-        vector_retriever = index.as_retriever(similarity_top_k=top_k)
+        vector_retriever = index.as_retriever(similarity_top_k=retrieve_k)
         
         # BM25 retriever
         num_docs = len(docstore.docs)
-        bm25_top_k = min(top_k, num_docs)
+        bm25_top_k = min(retrieve_k, num_docs)
         
         if num_docs == 0:
-            logger.info("No documents in BM25 store yet, using vector retrieval only")
+            logger.info("No documents in store yet, using vector retrieval only")
             nodes = vector_retriever.retrieve(query_text)
         else:
             bm25_retriever = BM25Retriever.from_defaults(
@@ -227,7 +232,7 @@ def retrieve_context(
             # Fusion retriever
             retriever = QueryFusionRetriever(
                 retrievers=[vector_retriever, bm25_retriever],
-                similarity_top_k=top_k,
+                similarity_top_k=retrieve_k,
                 num_queries=1,
                 mode="reciprocal_rerank",
                 use_async=False,
@@ -236,15 +241,49 @@ def retrieve_context(
             
             nodes = retriever.retrieve(query_text)
         
+        # Separate journal entries from context files
+        journal_nodes = [n for n in nodes if n.metadata.get('doc_type') == 'journal']
+        context_nodes = [n for n in nodes if n.metadata.get('doc_type') == 'context']
+        
+        # Take first min_journal_entries journal entries
+        selected_journals = journal_nodes[:min_journal_entries]
+        
+        # Fill remaining slots (up to 8 total) with mix of more journals and context
+        total_slots = 8
+        remaining_slots = total_slots - len(selected_journals)
+        
+        if remaining_slots > 0:
+            # Add additional journals and context files to fill remaining slots
+            additional_journals = journal_nodes[min_journal_entries:]
+            remaining_nodes = additional_journals + context_nodes
+            selected_additional = remaining_nodes[:remaining_slots]
+            final_nodes = selected_journals + selected_additional
+        else:
+            final_nodes = selected_journals
+        
         # Format the retrieved nodes
         context_snippets = []
-        for i, node in enumerate(nodes[:top_k], 1):
+        journal_count = 0
+        context_count = 0
+        
+        for node in final_nodes:
+            doc_type = node.metadata.get('doc_type', 'journal')
             filename = node.metadata.get('filename', 'Unknown')
             text = node.get_content(metadata_mode='none')
-            snippet = f"[Past Entry {i} - {filename}]\n{text[:500]}..."
+            
+            if doc_type == 'journal':
+                journal_count += 1
+                date = node.metadata.get('date', filename.replace('.md', ''))
+                snippet = f"[Past Journal Entry - [[{date}]]]\n{text[:500]}..."
+            else:
+                context_count += 1
+                file_basename = filename.replace('.md', '')
+                title = file_basename.replace('-', ' ').replace('_', ' ').title()
+                snippet = f"[Background Context: {title} - link as [[{file_basename}]]]\n{text[:500]}..."
+            
             context_snippets.append(snippet)
         
-        logger.info(f"Retrieved {len(context_snippets)} context snippets")
+        logger.info(f"Retrieved {journal_count} journal entries and {context_count} context files")
         return context_snippets
         
     except Exception as e:
@@ -336,6 +375,7 @@ def upsert_index(
             text=user_text,
             doc_id=doc_id,
             metadata={
+                'doc_type': 'journal',
                 'filename': filename,
                 'file_path': str(file_path),
                 'date': filename.replace('.md', ''),  # YYYY-MM-DD format

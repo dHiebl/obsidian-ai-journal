@@ -8,13 +8,19 @@ This system expects a specific folder structure by default:
 
 ```
 ~/Documents/Obsidian/Personal/          # Your vault
-├── Journal/Daily/                      # Daily journal entries
+├── Journal/
+│   ├── Daily/                          # Daily journal entries
+│   ├── Context/                        # (Optional) Background context files
+│   └── Weekly/                         # (Optional) Auto-generated weekly summaries
 └── _System/                            # System files (index, logs)
-    └── ai/                             # This codebase
+    ├── ai/                             # This codebase
+    └── index/                          # Vector store (auto-created)
 ```
 
 **Using a different structure?** Edit `config.py` to customize:
 - `DAILY_DIR` - Where your daily journal entries are (default: `"Journal/Daily"`)
+- `CONTEXT_DIR` - Where to put background context files (default: `"Journal/Context"`)
+- `WEEKLY_DIR` - Where weekly summaries are saved (default: `"Journal/Weekly"`)
 - `PERSIST_DIR` - Where to store the vector index (default: `"_System/index"`)
 - `LOG_PATH` - Where to write logs (default: `"_System/watcher.log"`)
 
@@ -22,6 +28,8 @@ This system expects a specific folder structure by default:
 
 - **Automatic Analysis**: Watches your daily journal folder and analyzes entries when you mark them ready
 - **Context-Aware**: Uses hybrid retrieval (BM25 + vector search) to find relevant past entries for context
+- **Background Context**: Optional support for static context files (personality tests, therapy notes, etc.)
+- **Weekly Summaries**: Generate meta-level analysis of entire weeks
 - **Smart Triggers**: Only processes entries that are marked ready, meet minimum length (150 chars), and have been idle for 30 seconds
 - **Structured Insights**: Generates analysis with sections for Summary, Emotions, Distortions, Triggers/Needs, Patterns, and Reflection Prompts
 - **Obsidian Links**: Creates clickable `[[YYYY-MM-DD]]` links to past journal entries when identifying patterns
@@ -147,6 +155,68 @@ Stop the watcher, delete `_System/index/`, restart. It will rebuild automaticall
 - The AI analysis supplements your reflection - review and edit as needed
 - Try different models in `config.py` to balance quality and speed (e.g., `qwen3:8b`, `gemma2:9b`)
 - Customize `ANALYSIS_SYSTEM_PROMPT` to match your preferred analysis style
+
+## Optional Features
+
+### Context Files
+
+Add persistent background information that enriches every analysis (personality tests, family history, therapy notes, etc.).
+
+**Setup:**
+
+1. Create the context folder:
+```bash
+mkdir -p ~/Documents/Obsidian/Personal/Journal/Context
+```
+
+2. Add markdown files with your background information:
+```bash
+# Example files:
+# - big5-personality.md
+# - family-history.md
+# - therapy-notes.md
+```
+
+3. Run the ingestion script:
+```bash
+cd ~/Documents/Obsidian/Personal/_System/ai
+python ingest_context.py
+```
+
+**How it works:**
+- Context files are indexed once and retrieved when relevant to your daily entries
+- The AI will reference them naturally (e.g., "consistent with your high conscientiousness")
+- Re-run `ingest_context.py` whenever you add or update context files
+- Context files don't need date-based links - they're referenced by title
+
+### Weekly Summaries
+
+Generate meta-level analysis of the last 7 days of journal entries.
+
+**Usage:**
+
+```bash
+cd ~/Documents/Obsidian/Personal/_System/ai
+python generate_weekly.py
+```
+
+This will:
+- Gather entries from the last 7 days (from today going back)
+- Load all available daily entries from that period
+- Retrieve relevant context files
+- Generate a comprehensive 7-day analysis
+- Save to `Journal/Weekly/YYYY-MM-DD_to_YYYY-MM-DD.md` (e.g., `2025-10-31_to_2025-11-06.md`)
+
+**7-day analysis includes:**
+- Week Overview: The arc and dominant themes
+- Emotional Trajectory: How feelings evolved across the period
+- Key Themes: Recurring patterns with links to specific days
+- Progress & Wins: What worked well
+- Stuck Points: What didn't shift
+- Week-to-Week Patterns: Longer-term trends
+- Recommendations: Actionable suggestions for the coming days
+
+**Note:** These summaries are NOT added back to the index - they're standalone reflections.
 
 ## Running as a Background Service
 
