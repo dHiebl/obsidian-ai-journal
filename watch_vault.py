@@ -604,9 +604,10 @@ def main():
         llm = Ollama(
             model=LLM_MODEL,
             base_url=OLLAMA_URL,
-            request_timeout=300.0
+            request_timeout=600.0,
+            thinking=True
         )
-        logger.info(f"LLM initialized: {LLM_MODEL}")
+        logger.info(f"LLM initialized: {LLM_MODEL} (thinking mode enabled)")
         
         # Fusion LLM (lightweight for retrieval)
         fusion_llm = Ollama(

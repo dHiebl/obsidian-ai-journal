@@ -68,7 +68,7 @@ ollama pull gpt-oss:20b
 ollama pull embeddinggemma:300m
 ```
 
-**Note**: The `gpt-oss:20b` model is quite large (~12GB). If you prefer a smaller model, you can edit `config.py` and change `LLM_MODEL` to something like `qwen3:8b` or `gemma2:9b`.
+**Note**: The `gpt-oss:20b` model is quite large (~12GB) and runs in thinking mode for deeper analysis (takes longer but produces better insights). If you prefer a smaller/faster model, you can edit `config.py` and change `LLM_MODEL` to something like `qwen3:8b` or `gemma2:9b`.
 
 ## Usage
 

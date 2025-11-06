@@ -20,9 +20,13 @@ LOG_FILE_PATH = VAULT_PATH / LOG_PATH
 # ============================================================================
 # Model Configuration
 # ============================================================================
-LLM_MODEL = "gpt-oss:20b"
+LLM_MODEL = "gpt-oss:20b"  # Thinking model - generates deeper analysis
 EMBED_MODEL = "embeddinggemma:300m"
 OLLAMA_URL = "http://localhost:11434"
+
+# Thinking mode is enabled for gpt-oss:20b (generates internal reasoning before output)
+# This improves analysis quality but takes longer. Timeout is set to 600s to accommodate.
+# To disable thinking mode, edit watch_vault.py and remove thinking=True from the main LLM.
 
 # ============================================================================
 # Trigger Configuration
