@@ -182,6 +182,12 @@ Please provide your analysis following the exact structure specified in your sys
         response = llm.chat(messages)
         summary = response.message.content
         
+        # Log thinking activity if present
+        thinking_blocks = [block for block in response.message.blocks if hasattr(block, '__class__') and block.__class__.__name__ == 'ThinkingBlock']
+        if thinking_blocks:
+            thinking_length = sum(len(block.content) for block in thinking_blocks)
+            logger.info(f"AI generated {thinking_length} chars of internal reasoning")
+        
         logger.info("7-day summary generated successfully")
         return summary
         
@@ -275,9 +281,9 @@ def main():
             model=LLM_MODEL,
             base_url=OLLAMA_URL,
             request_timeout=600.0,
-            thinking=True
+            additional_kwargs={"think": "medium"}
         )
-        logger.info(f"LLM initialized: {LLM_MODEL} (thinking mode enabled)")
+        logger.info(f"LLM initialized: {LLM_MODEL} (thinking mode: medium)")
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         print(f"Error initializing LLM: {e}")

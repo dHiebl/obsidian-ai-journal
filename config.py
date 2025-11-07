@@ -29,8 +29,12 @@ EMBED_MODEL = "embeddinggemma:300m"
 OLLAMA_URL = "http://localhost:11434"
 
 # Thinking mode is enabled for gpt-oss:20b (generates internal reasoning before output)
-# This improves analysis quality but takes longer. Timeout is set to 600s to accommodate.
-# To disable thinking mode, edit watch_vault.py and remove thinking=True from the main LLM.
+# GPT-OSS supports three thinking levels: "low", "medium", "high"
+# - "low": Faster, less reasoning (good for simple entries)
+# - "medium": Balanced speed and depth (recommended default)
+# - "high": Most thorough, slowest (for complex entries)
+# Current setting: "medium" - see additional_kwargs in watch_vault.py and generate_weekly.py
+# Timeout is set to 600s to accommodate thinking time.
 
 # ============================================================================
 # Trigger Configuration

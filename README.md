@@ -76,7 +76,7 @@ ollama pull gpt-oss:20b
 ollama pull embeddinggemma:300m
 ```
 
-**Note**: The `gpt-oss:20b` model is quite large (~12GB) and runs in thinking mode for deeper analysis (takes longer but produces better insights). If you prefer a smaller/faster model, you can edit `config.py` and change `LLM_MODEL` to something like `qwen3:8b` or `gemma2:9b`.
+**Note**: The `gpt-oss:20b` model is quite large (~12GB) and runs in thinking mode for deeper analysis (takes longer but produces better insights). It's configured with `"medium"` thinking level for balanced speed and quality. If you prefer a smaller/faster model, you can edit `config.py` and change `LLM_MODEL` to something like `qwen3:8b` or `gemma2:9b`.
 
 ## Usage
 
@@ -122,6 +122,27 @@ Edit `config.py` to customize:
 - **Triggers**: `IDLE_SECONDS` (default: 30), `MIN_LENGTH` (default: 150 characters)
 - **Retrieval**: `TOP_K` (default: 5) - number of past entries to use as context
 - **Prompt**: `ANALYSIS_SYSTEM_PROMPT` - customize the AI's analysis style
+
+### Adjusting Thinking Levels (GPT-OSS)
+
+The GPT-OSS model supports three thinking levels that control the depth of internal reasoning:
+
+- **`"low"`**: Faster generation, minimal reasoning (good for simple entries)
+- **`"medium"`**: Balanced speed and quality (default, recommended)
+- **`"high"`**: Most thorough analysis, slowest (for complex entries or deeper insights)
+
+To change the thinking level, edit `watch_vault.py` and `generate_weekly.py`:
+
+```python
+llm = Ollama(
+    model=LLM_MODEL,
+    base_url=OLLAMA_URL,
+    request_timeout=600.0,
+    additional_kwargs={"think": "high"}  # Change "medium" to "low" or "high"
+)
+```
+
+**Note**: Higher thinking levels take significantly longer but produce more nuanced analysis.
 
 ## Troubleshooting
 
