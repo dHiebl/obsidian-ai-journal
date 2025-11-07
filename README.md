@@ -123,9 +123,13 @@ Edit `config.py` to customize:
 - **Retrieval**: `TOP_K` (default: 5) - number of past entries to use as context
 - **Prompt**: `ANALYSIS_SYSTEM_PROMPT` - customize the AI's analysis style
 
-### Adjusting Thinking Levels (GPT-OSS)
+### Using Thinking Models
 
-The GPT-OSS model supports three thinking levels that control the depth of internal reasoning:
+This project uses **GPT-OSS** with thinking mode enabled for deeper analysis.
+
+#### GPT-OSS Thinking Levels
+
+GPT-OSS supports three thinking levels that control the depth of internal reasoning:
 
 - **`"low"`**: Faster generation, minimal reasoning (good for simple entries)
 - **`"medium"`**: Balanced speed and quality (default, recommended)
@@ -142,7 +146,22 @@ llm = Ollama(
 )
 ```
 
-**Note**: Higher thinking levels take significantly longer but produce more nuanced analysis.
+**Note**: GPT-OSS requires the `additional_kwargs` approach because it only accepts string values (`"low"`, `"medium"`, `"high"`), not booleans.
+
+#### Other Thinking Models
+
+If you switch to other thinking models like **Qwen3**, **DeepSeek-v3.1**, or **DeepSeek R1**, you can use the simpler `thinking=True` parameter:
+
+```python
+llm = Ollama(
+    model="qwen3",  # or deepseek-v3.1, deepseek-r1
+    base_url=OLLAMA_URL,
+    request_timeout=600.0,
+    thinking=True  # Simple boolean for most thinking models
+)
+```
+
+These models accept boolean values directly via LlamaIndex's built-in `thinking` parameter.
 
 ## Troubleshooting
 
