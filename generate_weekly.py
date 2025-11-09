@@ -281,9 +281,9 @@ def main():
             model=LLM_MODEL,
             base_url=OLLAMA_URL,
             request_timeout=600.0,
-            additional_kwargs={"think": "medium"}
+            additional_kwargs={"think": "high"}
         )
-        logger.info(f"LLM initialized: {LLM_MODEL} (thinking mode: medium)")
+        logger.info(f"LLM initialized: {LLM_MODEL} (thinking mode: high)")
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         print(f"Error initializing LLM: {e}")

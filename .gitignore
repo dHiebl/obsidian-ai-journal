@@ -21,3 +21,5 @@ test_*.md
 
 # Personal configuration (contains user-specific paths)
 com.journal.watcher.plist
+
+.env
