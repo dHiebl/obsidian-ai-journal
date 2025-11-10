@@ -3,6 +3,10 @@ Configuration settings for the AI Journal Analysis system.
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env.local
+load_dotenv(dotenv_path=Path(__file__).parent / ".env.local")
 
 # ============================================================================
 # Path Configuration
@@ -24,16 +28,37 @@ WEEKLY_PATH = VAULT_PATH / WEEKLY_DIR
 # ============================================================================
 # Model Configuration
 # ============================================================================
-LLM_MODEL = "gpt-oss:20b"  # Thinking model - generates deeper analysis
-EMBED_MODEL = "embeddinggemma:300m"
-OLLAMA_URL = "http://localhost:11434"
 
-# Thinking mode is enabled for gpt-oss:20b (generates internal reasoning before output)
+# Mode Configuration: "local" or "cloud"
+# - "local": Uses local Ollama instance (requires Ollama running on localhost)
+# - "cloud": Uses Ollama cloud API (requires OLLAMA_API_KEY in .env.local)
+OLLAMA_MODE = "cloud"  # Change to "cloud" to use cloud models
+
+# Conditional configuration based on mode
+if OLLAMA_MODE == "cloud":
+    OLLAMA_URL = "https://ollama.com"
+    LLM_MODEL = "gpt-oss:120b"  # Cloud model (no -cloud suffix for direct API)
+    OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")
+    
+    if not OLLAMA_API_KEY:
+        raise ValueError(
+            "OLLAMA_API_KEY not found in environment. "
+            "Please add it to .env.local file for cloud mode."
+        )
+else:
+    OLLAMA_URL = "http://localhost:11434"
+    LLM_MODEL = "gpt-oss:20b"  # Local model
+    OLLAMA_API_KEY = None
+
+# Embedding model always uses local Ollama
+EMBED_MODEL = "embeddinggemma:300m"
+
+# Thinking mode is enabled for gpt-oss models (generates internal reasoning before output)
 # GPT-OSS supports three thinking levels: "low", "medium", "high"
 # - "low": Faster, less reasoning (good for simple entries)
 # - "medium": Balanced speed and depth (recommended default)
 # - "high": Most thorough, slowest (for complex entries)
-# Current setting: "medium" - see additional_kwargs in watch_vault.py and generate_weekly.py
+# Current setting: "medium" for daily, "high" for weekly
 # Timeout is set to 600s to accommodate thinking time.
 
 # ============================================================================

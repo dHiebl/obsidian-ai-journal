@@ -11,6 +11,7 @@ from llama_index.core.llms import ChatMessage
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.core import Settings
+from ollama import Client
 
 from watch_vault import initialize_index_and_docstore, setup_logging, split_user_text
 from config import (
@@ -21,6 +22,8 @@ from config import (
     LLM_MODEL,
     EMBED_MODEL,
     OLLAMA_URL,
+    OLLAMA_MODE,
+    OLLAMA_API_KEY,
     WEEKLY_SYSTEM_PROMPT,
 )
 
@@ -259,31 +262,47 @@ def main():
     start_date, end_date = get_last_seven_days()
     logger.info(f"Period: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
     
-    # Initialize embedding model
+    # Initialize embedding model (always local)
     logger.info("Initializing embedding model...")
+    logger.info(f"Mode: {OLLAMA_MODE}")
     try:
         embed_model = OllamaEmbedding(
             model_name=EMBED_MODEL,
-            base_url=OLLAMA_URL
+            base_url="http://localhost:11434"  # Always local for embeddings
         )
         Settings.embed_model = embed_model
-        logger.info(f"Embedding model initialized: {EMBED_MODEL}")
+        logger.info(f"Embedding model initialized: {EMBED_MODEL} (local)")
     except Exception as e:
         logger.error(f"Error initializing embedding model: {e}")
-        print(f"Error: Could not connect to Ollama. Make sure it's running at {OLLAMA_URL}")
+        print(f"Error: Could not connect to local Ollama for embeddings. Make sure it's running at http://localhost:11434")
         print(f"Details: {e}")
         return
     
-    # Initialize LLM
+    # Initialize LLM - conditional client for cloud mode
     logger.info("Initializing LLM...")
     try:
-        llm = Ollama(
-            model=LLM_MODEL,
-            base_url=OLLAMA_URL,
-            request_timeout=600.0,
-            additional_kwargs={"think": "high"}
-        )
-        logger.info(f"LLM initialized: {LLM_MODEL} (thinking mode: high)")
+        if OLLAMA_MODE == "cloud":
+            logger.info("Creating cloud client with authentication...")
+            ollama_client = Client(
+                host=OLLAMA_URL,
+                headers={'Authorization': f'Bearer {OLLAMA_API_KEY}'}
+            )
+            llm = Ollama(
+                model=LLM_MODEL,
+                base_url=OLLAMA_URL,
+                request_timeout=600.0,
+                additional_kwargs={"think": "high"},
+                client=ollama_client
+            )
+            logger.info(f"LLM initialized: {LLM_MODEL} (cloud, thinking mode: high)")
+        else:
+            llm = Ollama(
+                model=LLM_MODEL,
+                base_url=OLLAMA_URL,
+                request_timeout=600.0,
+                additional_kwargs={"think": "high"}
+            )
+            logger.info(f"LLM initialized: {LLM_MODEL} (local, thinking mode: high)")
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         print(f"Error initializing LLM: {e}")

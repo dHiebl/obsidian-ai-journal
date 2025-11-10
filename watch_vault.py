@@ -30,6 +30,7 @@ from llama_index.core.retrievers import QueryFusionRetriever
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
+from ollama import Client
 
 from config import (
     VAULT_PATH,
@@ -42,6 +43,8 @@ from config import (
     LLM_MODEL,
     EMBED_MODEL,
     OLLAMA_URL,
+    OLLAMA_MODE,
+    OLLAMA_API_KEY,
     READY_MARKERS,
     IDLE_SECONDS,
     MIN_LENGTH,
@@ -639,29 +642,47 @@ def main():
     
     # Initialize Ollama models
     logger.info("Initializing Ollama models...")
+    logger.info(f"Mode: {OLLAMA_MODE}")
     try:
+        # Embedding model always uses local Ollama
         embed_model = OllamaEmbedding(
             model_name=EMBED_MODEL,
-            base_url=OLLAMA_URL
+            base_url="http://localhost:11434"  # Always local for embeddings
         )
         Settings.embed_model = embed_model
-        logger.info(f"Embedding model initialized: {EMBED_MODEL}")
+        logger.info(f"Embedding model initialized: {EMBED_MODEL} (local)")
         
-        llm = Ollama(
-            model=LLM_MODEL,
-            base_url=OLLAMA_URL,
-            request_timeout=600.0,
-            additional_kwargs={"think": "medium"}
-        )
-        logger.info(f"LLM initialized: {LLM_MODEL} (thinking mode: medium)")
+        # Main LLM - conditional client for cloud mode
+        if OLLAMA_MODE == "cloud":
+            logger.info("Creating cloud client with authentication...")
+            ollama_client = Client(
+                host=OLLAMA_URL,
+                headers={'Authorization': f'Bearer {OLLAMA_API_KEY}'}
+            )
+            llm = Ollama(
+                model=LLM_MODEL,
+                base_url=OLLAMA_URL,
+                request_timeout=600.0,
+                additional_kwargs={"think": "medium"},
+                client=ollama_client
+            )
+            logger.info(f"LLM initialized: {LLM_MODEL} (cloud, thinking mode: medium)")
+        else:
+            llm = Ollama(
+                model=LLM_MODEL,
+                base_url=OLLAMA_URL,
+                request_timeout=600.0,
+                additional_kwargs={"think": "medium"}
+            )
+            logger.info(f"LLM initialized: {LLM_MODEL} (local, thinking mode: medium)")
         
-        # Fusion LLM (lightweight for retrieval)
+        # Fusion LLM (lightweight for retrieval) - always local for speed
         fusion_llm = Ollama(
-            model=LLM_MODEL,
-            base_url=OLLAMA_URL,
+            model=LLM_MODEL if OLLAMA_MODE == "local" else "gpt-oss:20b",
+            base_url="http://localhost:11434",
             request_timeout=60.0
         )
-        logger.info("Fusion LLM initialized")
+        logger.info("Fusion LLM initialized (local)")
         
     except Exception as e:
         logger.error(f"Error initializing Ollama models: {e}")
