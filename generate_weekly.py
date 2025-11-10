@@ -92,16 +92,19 @@ def retrieve_relevant_context(
     combined_week_text: str,
     index,
     llm,
-    top_k: int = 3
+    top_k: int = 5
 ) -> List[str]:
     """
     Retrieve relevant context files for the 7-day period's content.
+    
+    Note: Only retrieves context files, not journal entries, since the weekly
+    summary already loads all 7 days of journal entries directly.
     
     Args:
         combined_week_text: Combined text from all 7 entries
         index: Vector store index
         llm: LLM instance for retrieval
-        top_k: Number of context files to retrieve
+        top_k: Number of context files to retrieve (default: 5)
         
     Returns:
         List of formatted context snippets
@@ -109,11 +112,13 @@ def retrieve_relevant_context(
     try:
         logger.info(f"Retrieving top {top_k} relevant context files...")
         
-        # Use vector retriever only (simpler for context files)
-        vector_retriever = index.as_retriever(similarity_top_k=top_k * 2)
+        # Retrieve larger pool to ensure we get enough context files
+        # (since journal entries might rank higher in similarity)
+        retrieve_k = 30
+        vector_retriever = index.as_retriever(similarity_top_k=retrieve_k)
         nodes = vector_retriever.retrieve(combined_week_text)
         
-        # Filter to only context files
+        # Filter to only context files and take top_k
         context_nodes = [n for n in nodes if n.metadata.get('doc_type') == 'context'][:top_k]
         
         # Format context files

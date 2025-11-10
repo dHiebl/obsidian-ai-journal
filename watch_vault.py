@@ -193,13 +193,15 @@ def retrieve_context(
     index: VectorStoreIndex,
     docstore: SimpleDocumentStore,
     llm: Ollama,
-    min_journal_entries: int = 5
+    min_journal_entries: int = 5,
+    max_context_files: int = 5,
+    max_total_nodes: int = 20
 ) -> List[str]:
     """
     Retrieve relevant past journal entries and context files using hybrid search.
     
     Ensures at least min_journal_entries journal entries are retrieved, with
-    additional slots filled by context files.
+    up to max_context_files context files, up to max_total_nodes total.
     
     Args:
         query_text: The current entry text to find similar entries for
@@ -207,14 +209,16 @@ def retrieve_context(
         docstore: BM25 document store
         llm: LLM instance for fusion retriever
         min_journal_entries: Minimum number of journal entries to retrieve (default: 5)
+        max_context_files: Maximum number of context files to include (default: 5)
+        max_total_nodes: Maximum total nodes to return (default: 20)
         
     Returns:
         List of formatted context snippets from past entries and context files
     """
     try:
-        # Retrieve more nodes than needed to ensure we can filter
-        retrieve_k = min_journal_entries + 8  # Get extra to filter from
-        logger.info(f"Retrieving up to {retrieve_k} nodes (ensuring {min_journal_entries} journal entries)...")
+        # Retrieve more nodes than needed to ensure we have good pool to filter from
+        retrieve_k = 25
+        logger.info(f"Retrieving up to {retrieve_k} nodes (target: {min_journal_entries} min journals, {max_context_files} max context, {max_total_nodes} max total)...")
         
         # Vector retriever
         vector_retriever = index.as_retriever(similarity_top_k=retrieve_k)
@@ -248,21 +252,22 @@ def retrieve_context(
         journal_nodes = [n for n in nodes if n.metadata.get('doc_type') == 'journal']
         context_nodes = [n for n in nodes if n.metadata.get('doc_type') == 'context']
         
-        # Take first min_journal_entries journal entries
+        # Take minimum required journal entries
         selected_journals = journal_nodes[:min_journal_entries]
         
-        # Fill remaining slots (up to 8 total) with mix of more journals and context
-        total_slots = 8
-        remaining_slots = total_slots - len(selected_journals)
+        # Take up to max_context_files context files
+        selected_context = context_nodes[:max_context_files]
+        
+        # Calculate remaining slots up to max_total_nodes
+        current_count = len(selected_journals) + len(selected_context)
+        remaining_slots = max_total_nodes - current_count
         
         if remaining_slots > 0:
-            # Add additional journals and context files to fill remaining slots
-            additional_journals = journal_nodes[min_journal_entries:]
-            remaining_nodes = additional_journals + context_nodes
-            selected_additional = remaining_nodes[:remaining_slots]
-            final_nodes = selected_journals + selected_additional
+            # Fill remaining slots with additional journal entries
+            additional_journals = journal_nodes[min_journal_entries:min_journal_entries + remaining_slots]
+            final_nodes = selected_journals + selected_context + additional_journals
         else:
-            final_nodes = selected_journals
+            final_nodes = selected_journals + selected_context
         
         # Format the retrieved nodes
         context_snippets = []
@@ -286,7 +291,7 @@ def retrieve_context(
             
             context_snippets.append(snippet)
         
-        logger.info(f"Retrieved {journal_count} journal entries and {context_count} context files")
+        logger.info(f"Retrieved {journal_count} journal entries and {context_count} context files (total: {len(final_nodes)} nodes)")
         return context_snippets
         
     except Exception as e:
