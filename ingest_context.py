@@ -16,10 +16,11 @@ from config import (
     INDEX_PERSIST_PATH,
     LOG_FILE_PATH,
     EMBED_MODEL,
-    OLLAMA_URL,
 )
 
 logger = logging.getLogger(__name__)
+
+LOCAL_OLLAMA_URL = "http://localhost:11434"
 
 
 def ingest_context_files(
@@ -143,13 +144,13 @@ def main():
     try:
         embed_model = OllamaEmbedding(
             model_name=EMBED_MODEL,
-            base_url=OLLAMA_URL
+            base_url=LOCAL_OLLAMA_URL
         )
         Settings.embed_model = embed_model
         logger.info(f"Embedding model initialized: {EMBED_MODEL}")
     except Exception as e:
         logger.error(f"Error initializing embedding model: {e}")
-        print(f"Error: Could not connect to Ollama. Make sure it's running at {OLLAMA_URL}")
+        print(f"Error: Could not connect to local Ollama at {LOCAL_OLLAMA_URL}")
         print(f"Details: {e}")
         return
     
